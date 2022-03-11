@@ -57,22 +57,68 @@ BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
   // size configuration. The starter code build a BVH aggregate with a
   // single leaf node (which is also the root) that encloses all the
   // primitives.
-
-
   BBox bbox;
+  if (end - start <= max_leaf_size) {
+    // This is a leaf node
+    for (auto p = start; p != end; p++) {
+      BBox bb = (*p)->get_bbox();
+      bbox.expand(bb);
+    }
 
-  for (auto p = start; p != end; p++) {
-    BBox bb = (*p)->get_bbox();
-    bbox.expand(bb);
+    BVHNode *node = new BVHNode(bbox);
+    node->start = start;
+    node->end = end;
+
+    return node;
   }
+  // This is an interior node
+  // Find the axis with most biggest range
+  double min_x = INT_MAX, max_x = INT_MIN, min_y = INT_MAX, max_y = INT_MIN, min_z = INT_MAX, max_z = INT_MIN;
+  for (auto it=start; it!=end; it++) {
+    Vector3D centroid = (*it)->get_bbox().centroid();
+    min_x = min(min_x, centroid.x);
+    max_x = max(max_x, centroid.x);
+    min_y = min(min_y, centroid.y);
+    max_y = max(max_y, centroid.y);
+    min_z = min(min_z, centroid.z);
+    max_z = max(max_z, centroid.z);
+  }
+  int vector_idx;
+  if (max_x - min_x > max_y - min_y) {
+    vector_idx = 0;
+    if (max_x - min_x < max_z - min_z) {
+      vector_idx = 2;
+    }
+  } else {
+    vector_idx = 1;
+    if (max_y - min_y < max_z - min_z) {
+      vector_idx = 2;
+    }
+  }
+  std::vector<double> coords;
+  for (auto it=start; it!=end; it++) {
+    Vector3D centroid = (*it)->get_bbox().centroid();
+    coords.emplace_back(centroid[vector_idx]);
+  }
+  std::sort(coords.begin(), coords.end(), std::less<double>());
+  double median = coords[coords.size() / 2];
+  auto mid = std::partition(start, end, 
+    [vector_idx, median](const Primitive* p) {
+      return p->get_bbox().centroid()[vector_idx] < median;
+    }
+  );
+
+  BVHNode* left_child = construct_bvh(start, mid, max_leaf_size);
+  BVHNode* right_child = construct_bvh(mid, end, max_leaf_size);
+
+  bbox.expand(left_child->bb);
+  bbox.expand(right_child->bb);
 
   BVHNode *node = new BVHNode(bbox);
-  node->start = start;
-  node->end = end;
+  node->l = left_child;
+  node->r = right_child;
 
   return node;
-
-
 }
 
 bool BVHAccel::has_intersection(const Ray &ray, BVHNode *node) const {
