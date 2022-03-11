@@ -181,15 +181,21 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
   // TODO (Part 5):
   // Modify your implementation to include adaptive sampling.
   // Use the command line parameters "samplesPerBatch" and "maxTolerance"
+ // To estimate the integral of radiance over a pixel, 
+ //you should generate ns_aa random rays using generate_ray(...) which you implemented in part 1.
+ // For each ray, you should call PathTracer::est_radiance_global_illumination(Ray r) to estimate the scene radiance along that ray and then incorporate it into the Monte Carlo estimate of the Vector3D value of the pixel.
 
   int num_samples = ns_aa;          // total samples to evaluate
   Vector2D origin = Vector2D(x, y); // bottom left corner of the pixel
-
-
-  sampleBuffer.update_pixel(Vector3D(0.2, 1.0, 0.8), x, y);
+  Vector3D radiance_per_pixel;
+  for (int i = 0; i < num_samples; i++){
+    Vector2D pixelpos = gridSampler->get_sample() + origin;
+    Ray unitray = camera->generate_ray(pixelpos[0]/sampleBuffer.w, pixelpos[1]/sampleBuffer.h);
+    radiance_per_pixel += est_radiance_global_illumination(unitray);
+  }
+  radiance_per_pixel = radiance_per_pixel/num_samples;
+  sampleBuffer.update_pixel(radiance_per_pixel, x, y);
   sampleCountBuffer[x + y * sampleBuffer.w] = num_samples;
-
-
 }
 
 void PathTracer::autofocus(Vector2D loc) {
