@@ -38,8 +38,12 @@ CHECK_FOR_AVX()
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL Clang OR ${CMAKE_CXX_COMPILER_ID} STREQUAL AppleClang)
     set(CGL_CXX_FLAGS "-std=c++11 -m64 -fPIC")
-    set(CGL_CXX_FLAGS "${CGL_CXX_FLAGS} -O3")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    if (CGL_BUILD_DEBUG)
+        set(CGL_CXX_FLAGS "${CGL_CXX_FLAGS} -glldb")
+    else()
+        set(CGL_CXX_FLAGS "${CGL_CXX_FLAGS} -O3")
+    endif()
 endif()
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
