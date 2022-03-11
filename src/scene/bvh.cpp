@@ -107,7 +107,9 @@ BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
       return p->get_bbox().centroid()[vector_idx] < median;
     }
   );
-
+  if (mid - start == 0 || end - mid == 0) {
+    mid = start + (end - start) / 2;
+  }
   BVHNode* left_child = construct_bvh(start, mid, max_leaf_size);
   BVHNode* right_child = construct_bvh(mid, end, max_leaf_size);
 
