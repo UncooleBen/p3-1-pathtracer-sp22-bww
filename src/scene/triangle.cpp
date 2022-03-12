@@ -46,7 +46,7 @@ bool Triangle::has_intersection(const Ray &r) const {
   if (alpha >= 0 && alpha <= 1 && 
       beta >= 0 && beta <= 1 &&
       gamma >= 0 && gamma <= 1 &&
-      abs(alpha + beta + gamma - 1) <= 0.0000001) {
+      abs(alpha + beta + gamma - 1) <= EPS_D) {
     return true;
   }
   return false;
