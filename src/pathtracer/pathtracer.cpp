@@ -106,11 +106,7 @@ Vector3D PathTracer::zero_bounce_radiance(const Ray &r,
                                           const Intersection &isect) {
   // TODO: Part 3, Task 2
   // Returns the light that results from no bounces of light
-
-
-  return Vector3D(1.0);
-
-
+  return isect.bsdf->get_emission();
 }
 
 Vector3D PathTracer::one_bounce_radiance(const Ray &r,
@@ -151,20 +147,19 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
   // You will extend this in assignment 3-2.
   // If no intersection occurs, we simply return black.
   // This changes if you implement hemispherical lighting for extra credit.
+  if (!bvh->intersect(r, &isect))
+    return envLight ? envLight->sample_dir(r) : L_out;
 
   // The following line of code returns a debug color depending
   // on whether ray intersection with triangles or spheres has
   // been implemented.
   //
   // REMOVE THIS LINE when you are ready to begin Part 3.
-  
-  if (!bvh->intersect(r, &isect))
-    return envLight ? envLight->sample_dir(r) : L_out;
-
-
-  L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
+  // L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
+  L_out = zero_bounce_radiance(r, isect);
 
   // TODO (Part 3): Return the direct illumination.
+
 
   // TODO (Part 4): Accumulate the "direct" and "indirect"
   // parts of global illumination into L_out rather than just direct
