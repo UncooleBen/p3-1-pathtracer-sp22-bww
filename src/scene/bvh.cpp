@@ -157,7 +157,7 @@ bool BVHAccel::has_intersection(const Ray &ray, BVHNode *node) const {
   double t0 = -INF_D, t1 = INF_D;
   bool hit = node->bb.intersect(ray, t0, t1);
   if (!hit) {
-    return hit;
+    return false;
   }
 
   // Hits the bbox. Still need test primitives.
@@ -192,7 +192,7 @@ bool BVHAccel::intersect(const Ray &ray, Intersection *i, BVHNode *node) const {
   double t0 = -INF_D, t1 = INF_D;
   bool hit = node->bb.intersect(ray, t0, t1);
   if (!hit) {
-    return hit;
+    return false;
   }
 
   // Hits the bbox. Still need test primitives.
