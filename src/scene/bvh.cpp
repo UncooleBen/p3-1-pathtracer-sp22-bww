@@ -89,7 +89,7 @@ BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
   }
   // This is an interior node
   // Find the axis with most biggest range
-  double min_x = INT_MAX, max_x = INT_MIN, min_y = INT_MAX, max_y = INT_MIN, min_z = INT_MAX, max_z = INT_MIN;
+  double min_x = INF_D, max_x = -INF_D, min_y = INF_D, max_y = -INF_D, min_z = INF_D, max_z = -INF_D;
   for (auto it=start; it!=end; it++) {
     Vector3D centroid = (*it)->get_bbox().centroid();
     min_x = min(min_x, centroid.x);
