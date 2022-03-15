@@ -90,7 +90,7 @@ PathTracer::estimate_direct_lighting_hemisphere(const Ray &r,
     }
 
   }
-   L_p_wr =  L_p_wr/(num_samples*1/(2*PI));
+   L_p_wr =  L_p_wr/(num_samples/(2*PI));
 
   return L_p_wr;
 
@@ -137,8 +137,8 @@ PathTracer::estimate_direct_lighting_importance(const Ray &r,
       w_in_ray.min_t = EPS_F;
       w_in_ray.max_t =  disttolight/world_w_in.norm() - EPS_F;
 
-     Intersection in_isect;
-      if(! bvh->intersect(w_in_ray, &in_isect)){
+     //Intersection in_isect;
+      if(!bvh->has_intersection(w_in_ray)){
       Vector3D cos_thetaj = abs(w_in.z);
       L_out += bsdf_f*L_in*cos_thetaj/pdf;
       }
@@ -187,23 +187,22 @@ Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r,
   double pdf;
   double prob = 0.7;
       //calculation at object coordinate
-  L_out = one_bounce_radiance(r, isect);
+  
 
   Vector3D bsdf_f = isect.bsdf->sample_f(w_out, &w_in, &pdf);
-  if(r.depth <=1){
-    return L_out;
-  }else if( r.depth == max_ray_depth || coin_flip(prob)){
+  if ((r.depth == max_ray_depth) || (r.depth > 0 && coin_flip(prob))) {
+      L_out += one_bounce_radiance(r, isect);
       Vector3D world_w_in = o2w*w_in;
-      Ray w_in_ray = Ray(hit_p + EPS_D*world_w_in, world_w_in, (int)r.depth-1);
+      Ray w_in_ray = Ray(hit_p , world_w_in, (int)r.depth-1);
+      w_in_ray.min_t = EPS_F;
       Intersection in_isect;
-      if( bvh->intersect(w_in_ray, &in_isect)){
+      if(bvh->intersect(w_in_ray, &in_isect)){
         Vector3D L_in = in_isect.bsdf->get_emission();
         Vector3D cos_thetaj = abs(w_in.z);
-        L_out += at_least_one_bounce_radiance(w_in_ray,in_isect)*L_in*cos_thetaj/pdf/prob;
+        L_out += at_least_one_bounce_radiance(w_in_ray,in_isect)*pdf;//*L_in*cos_thetaj/pdf/prob;
       }
   }
   return L_out;
-
 }
 
 Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {

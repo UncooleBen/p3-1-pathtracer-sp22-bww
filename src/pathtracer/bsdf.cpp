@@ -66,7 +66,7 @@ Vector3D DiffuseBSDF::sample_f(const Vector3D wo, Vector3D *wi, double *pdf) {
   // After sampling a value for wi, it returns the evaluation of the BSDF
   // at (wo, *wi).
   // You can use the `f` function. The reference solution only takes two lines.
-  wi = new Vector3D(sampler.get_sample(pdf));
+  *wi = sampler.get_sample(pdf);
   return f(wo, *wi);
 
 }
