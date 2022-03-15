@@ -15,7 +15,7 @@ bool Sphere::test(const Ray &r, double &t1, double &t2) const {
   // Return true if there are intersections and writing the
   // smaller of the two intersection times in t1 and the larger in t2.
 
-  if (t2 < 0 || t1 < 0 || t1 < r.min_t || t2 > r.max_t) {
+  if (t2 < 0 || t2 > r.max_t) {
     return false;
   }
   return true;
@@ -57,11 +57,21 @@ bool Sphere::intersect(const Ray &r, Intersection *i) const {
   if (!test(r, t1, t2)) {
     return false;
   }
+  if(t1 > 0){
   r.max_t = t1;
   i->t = t1;
   i->n = (r.at_time(t1) - o).unit();
   i->bsdf = get_bsdf();
   i->primitive = this;
+  }
+  else{
+  r.max_t = t2;
+  i->t = t2;
+  i->n = (r.at_time(t2) - o).unit();
+  i->bsdf = get_bsdf();
+  i->primitive = this;
+  }
+
   return true;
 }
 

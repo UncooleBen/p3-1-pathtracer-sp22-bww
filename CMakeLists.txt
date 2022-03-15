@@ -4,8 +4,8 @@ project(Assignment3)
 #-------------------------------------------------------------------------------
 # Build options
 #-------------------------------------------------------------------------------
-option(BUILD_DEBUG     "Build with debug settings"    OFF)
-option(BUILD_DOCS      "Build documentation"          OFF)
+option(BUILD_DEBUG     "Build with debug settings"    ON)
+option(BUILD_DOCS      "Build documentation"          ON)
 
 
 set(BUILD_DEBUG ${BUILD_DEBUG} CACHE BOOL "Build debug" FORCE)

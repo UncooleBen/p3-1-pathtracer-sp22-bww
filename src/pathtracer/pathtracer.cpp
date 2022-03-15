@@ -58,23 +58,41 @@ PathTracer::estimate_direct_lighting_hemisphere(const Ray &r,
   Matrix3x3 o2w;
   make_coord_space(o2w, isect.n);
   Matrix3x3 w2o = o2w.T();
-
   // w_out points towards the source of the ray (e.g.,
   // toward the camera if this is a primary ray)
   const Vector3D hit_p = r.o + r.d * isect.t;
   const Vector3D w_out = w2o * (-r.d);
-
   // This is the same number of total samples as
   // estimate_direct_lighting_importance (outside of delta lights). We keep the
   // same number of samples for clarity of comparison.
   int num_samples = scene->lights.size() * ns_area_light;
   Vector3D L_out;
-
   // TODO (Part 3): Write your sampling loop here
   // TODO BEFORE YOU BEGIN
   // UPDATE `est_radiance_global_illumination` to return direct lighting instead of normal shading 
+  Vector3D L_p_wr;
+  for(int i= 0; i < num_samples; i++){
+    Vector3D w_in = hemisphereSampler->get_sample();
+    if(w_out.z <0){
+      w_in.z = -w_in.z;
+    }
+    //calculation at object coordinate 
+    Vector3D bsdf_f = isect.bsdf->f(w_out, w_in);
+    Ray w_in_ray = Ray(hit_p, o2w*w_in);
+    w_in_ray.min_t = EPS_F;
+    Intersection in_isect;
 
-  return Vector3D(1.0);
+    if( bvh->intersect(w_in_ray, &in_isect)){
+      Vector3D L_in = in_isect.bsdf->get_emission();
+      
+      Vector3D cos_thetaj = abs(w_in.z);
+      L_p_wr += bsdf_f*L_in*cos_thetaj;
+    }
+
+  }
+   L_p_wr =  L_p_wr/(num_samples*1/(2*PI));
+
+  return L_p_wr;
 
 }
 
@@ -96,9 +114,38 @@ PathTracer::estimate_direct_lighting_importance(const Ray &r,
   const Vector3D hit_p = r.o + r.d * isect.t;
   const Vector3D w_out = w2o * (-r.d);
   Vector3D L_out;
+  int num_samples;
+  for (auto light: scene->lights){
+    int unit_light_samples = 0;
+    if(light->is_delta_light()){
+      unit_light_samples +=1;
+    }
+    else{
+      unit_light_samples += ns_area_light;
+    }
+    num_samples += unit_light_samples;
 
+    for(int i= 0; i < unit_light_samples; i++){
+      Vector3D world_w_in;  
+      double disttolight, pdf;
+      Vector3D L_in =  light->sample_L(hit_p, &world_w_in, &disttolight, &pdf);
+      //calculation at object coordinate
+      Vector3D w_in = w2o*world_w_in; 
+      Vector3D bsdf_f = isect.bsdf->f(w_out, w_in);
 
-  return Vector3D(1.0);
+      Ray w_in_ray = Ray(hit_p, world_w_in);
+      w_in_ray.min_t = EPS_F;
+      w_in_ray.max_t =  disttolight/world_w_in.norm() - EPS_F;
+
+     Intersection in_isect;
+      if(! bvh->intersect(w_in_ray, &in_isect)){
+      Vector3D cos_thetaj = abs(w_in.z);
+      L_out += bsdf_f*L_in*cos_thetaj/pdf;
+      }
+    }
+  }
+  L_out = L_out/num_samples;
+  return L_out;
 
 }
 
@@ -106,11 +153,7 @@ Vector3D PathTracer::zero_bounce_radiance(const Ray &r,
                                           const Intersection &isect) {
   // TODO: Part 3, Task 2
   // Returns the light that results from no bounces of light
-
-
-  return Vector3D(1.0);
-
-
+  return isect.bsdf->get_emission();
 }
 
 Vector3D PathTracer::one_bounce_radiance(const Ray &r,
@@ -118,10 +161,12 @@ Vector3D PathTracer::one_bounce_radiance(const Ray &r,
   // TODO: Part 3, Task 3
   // Returns either the direct illumination by hemisphere or importance sampling
   // depending on `direct_hemisphere_sample`
-
-
-  return Vector3D(1.0);
-
+  if( direct_hemisphere_sample){
+    return estimate_direct_lighting_hemisphere(r, isect);
+  }
+  else{
+    return estimate_direct_lighting_importance(r, isect);
+  }
 
 }
 
@@ -135,13 +180,30 @@ Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r,
   Vector3D w_out = w2o * (-r.d);
 
   Vector3D L_out(0, 0, 0);
-
   // TODO: Part 4, Task 2
   // Returns the one bounce radiance + radiance from extra bounces at this point.
   // Should be called recursively to simulate extra bounces.
+  Vector3D w_in;
+  double pdf;
+  double prob = 0.7;
+      //calculation at object coordinate
+  L_out = one_bounce_radiance(r, isect);
 
-
+  Vector3D bsdf_f = isect.bsdf->sample_f(w_out, &w_in, &pdf);
+  if(r.depth <=1){
+    return L_out;
+  }else if( r.depth == max_ray_depth || coin_flip(prob)){
+      Vector3D world_w_in = o2w*w_in;
+      Ray w_in_ray = Ray(hit_p + EPS_D*world_w_in, world_w_in, (int)r.depth-1);
+      Intersection in_isect;
+      if( bvh->intersect(w_in_ray, &in_isect)){
+        Vector3D L_in = in_isect.bsdf->get_emission();
+        Vector3D cos_thetaj = abs(w_in.z);
+        L_out += at_least_one_bounce_radiance(w_in_ray,in_isect)*L_in*cos_thetaj/pdf/prob;
+      }
+  }
   return L_out;
+
 }
 
 Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
@@ -160,14 +222,13 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
   
   if (!bvh->intersect(r, &isect))
     return envLight ? envLight->sample_dir(r) : L_out;
-
-
-  L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
-
-  // TODO (Part 3): Return the direct illumination.
-
+  //L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
+  L_out += zero_bounce_radiance(r, isect); 
+  //L_out += one_bounce_radiance(r, isect);
   // TODO (Part 4): Accumulate the "direct" and "indirect"
+  L_out += at_least_one_bounce_radiance(r, isect);
   // parts of global illumination into L_out rather than just direct
+
 
   return L_out;
 }
@@ -191,6 +252,7 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
   for (int i = 0; i < num_samples; i++){
     Vector2D pixelpos = gridSampler->get_sample() + origin;
     Ray unitray = camera->generate_ray(pixelpos[0]/sampleBuffer.w, pixelpos[1]/sampleBuffer.h);
+    unitray.depth = max_ray_depth;
     radiance_per_pixel += est_radiance_global_illumination(unitray);
   }
   radiance_per_pixel = radiance_per_pixel/num_samples;
