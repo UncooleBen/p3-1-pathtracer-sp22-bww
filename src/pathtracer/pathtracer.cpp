@@ -223,17 +223,27 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
   // been implemented.
   //
   // REMOVE THIS LINE when you are ready to begin Part 3.
-  // L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
+#ifdef DEBUG_INDICATOR
+  L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
+  return L_out;
+#endif
+
+#define MY_PART_4 1
+
   L_out += zero_bounce_radiance(r, isect);
 
+#ifdef MY_PART_3
   // TODO (Part 3): Return the direct illumination.
-  // L_out += one_bounce_radiance(r, isect);
+  L_out += one_bounce_radiance(r, isect);
+  return L_out;
+#endif
 
-
+#ifdef MY_PART_4
   // TODO (Part 4): Accumulate the "direct" and "indirect"
   // parts of global illumination into L_out rather than just direct
   L_out += at_least_one_bounce_radiance(r, isect);
   return L_out;
+#endif
 }
 
 void PathTracer::raytrace_pixel(size_t x, size_t y) {
@@ -251,8 +261,10 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
 
   Vector3D pixel_color(0, 0, 0);
 
-  // Part 5
+// Part 5
+#ifdef MY_PART_5
   double sample_sum = 0.0, sample_squared_sum = 0.0;
+#endif
   int ray_idx;
   for (ray_idx=0; ray_idx<num_samples; ray_idx++) {
     Vector2D sample = gridSampler->get_sample() + origin;
@@ -262,7 +274,7 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
     sample_ray.depth = max_ray_depth;
     Vector3D pixel_radiance = est_radiance_global_illumination(sample_ray);
     pixel_color += pixel_radiance;
-
+#ifdef MY_PART_5
     sample_sum += pixel_radiance.illum();
     sample_squared_sum += pow(pixel_radiance.illum(), 2);
 
@@ -277,6 +289,7 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
         break;
       }
     }
+#endif
   }
   pixel_color /= ray_idx;
   sampleBuffer.update_pixel(pixel_color, x, y);
