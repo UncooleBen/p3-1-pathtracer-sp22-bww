@@ -303,27 +303,43 @@
 
 
 
-            <h2 align="middle">A Few Notes On Webpages</h2>
-            <p>Here are a few problems students have encountered in the past. You will probably encounter these problems
-                at some point, so don't wait until right before the deadline to check that everything is working. Test
-                your website on the instructional machines early!</p>
-            <ul>
-                <li>Your main report page should be called index.html.</li>
-                <li>Be sure to include and turn in all of the other files (such as images) that are linked in your
-                    report!</li>
-                <li>Use only <em>relative</em> paths to files, such as
-                    <pre>"./images/image.jpg"</pre>
-                    Do <em>NOT</em> use absolute paths, such as
-                    <pre>"/Users/student/Desktop/image.jpg"</pre>
-                </li>
-                <li>Pay close attention to your filename extensions. Remember that on UNIX systems (such as the
-                    instructional machines), capitalization matters.
-                    <pre>.png != .jpeg != .jpg != .JPG</pre>
-                <li>Be sure to adjust the permissions on your files so that they are world readable. For more
-                    information on this please see this tutorial: <a
-                        href="http://www.grymoire.com/Unix/Permissions.html">http://www.grymoire.com/Unix/Permissions.html</a>
-                </li>
-                <li>And again, test your website on the instructional machines early!</li>
+            <h2 align="middle">Part 5: Adaptive Sampling</h2>
+            <p>
+                In part 5, we implemented adaptive sampling using two helper variables <code>sample_sum</code> and
+                <code>sample_squared_sum</code>, which is the s1 and s2 mentioned in the part 5 guideline. We update
+                these two variables as we generate new pixel ray samples and use them to compute the indicator
+                <code>I</code>. And the test whether it lies in the product of maxTolerance and mean. If so, we break
+                out of the for loop and divide the accumulated radiance by the sample count so far.
+            </p>
+            <div align="center">
+                <table style="width:100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_bunny_2048_1_5.png" width="480px" />
+                            <figcaption align="middle">CBbunny with 2048 samples, 1 ray, and 5 ray depth</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_bunny_1024_1_5_rate.png" width="480px" />
+                            <figcaption align="middle">CBbunny rate with 2048 samples, 1 ray, and 5 ray depth
+                            </figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <p>
+                We can see from the rate image that the three walls and the floor converges very quickly. This is
+                reasonable since they receive direct strong radiance from the light source on the ceiling, making other
+                lights bounce on them less important.
+            </p>
+            <p>
+                The ceiling converges very slowly because there is hardly any direct lights bounce on it. Most of the
+                radiance it receives is from more than one bounces.
+            </p>
+            <p>
+                Similar observation applies on the bunny. The surfaces with top pointing normal converges quickly as
+                most of the radiances come from the light source. However, other surfaces converge slowly because they
+                are not directly lighted and need to be updated according to more than one bounces.
+            </p>
     </div>
 </body>
 
