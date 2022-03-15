@@ -60,7 +60,14 @@
             </div>
 
             <h2 align="middle">Part 2: Bounding Volume Hierarchy</h2>
-            <p>INSERT HERE</p>
+            <p>
+            Walk through your BVH construction algorithm. Explain the heuristic you chose for picking the splitting point.
+            The BVH algorithm partitions sets of objects into disjoint subsets. If given primitives is larger than the max_leaf_size,
+            we need to new an internal node which contains a bounding box, left and right children node and recursively split set of primitives
+            in two subsets. When the the number of given primitives is smaller or equal to max_leaf_size, we store the object reference in each leaf node and stop recursion.
+            As for picking the splitting point, we first chose the axis with the largest cover range. Then we sorted the primitives based on their positions on this axis,
+            and pick up the median object, using the median index as our splitting point.
+            </p>
             <div align="center">
                 <table style="width:100%">
                     <tr>
@@ -87,16 +94,29 @@
             </div>
             <p>
                 BVH performance comparison on peter.dae:
-                Without BVH:
-                [PathTracer] Building BVH from 40018 primitives... Done! (0.0004 sec)
-                [PathTracer] Rendering... 100%! (31.6675s)
+                Without BVH: <br>
+                Building BVH: 0.0004 sec <br>
+                Render: 31.6675 sec <br>
+            </p>
+            <p>
                 With BVH:
-                [PathTracer] Building BVH from 40018 primitives... Done! (0.0222 sec)
-                [PathTracer] Rendering... 100%! (0.0443s)
+                Building BVH: 0.0222 sec <br>
+                Render: 0.0443s <br>
             </p>
 
             <h2 align="middle">Part 3: Direct Illumination</h2>
-            <p>INSERT HERE</p>
+            <p>Walk through both implementations of the direct lighting function. <br>
+                Direct Lighting with Uniform Hemisphere Sampling: <br>
+                We first casted a ray from the camera, through a specific pixel, and into the scene. 
+                Once it intersects something in the scene, we do this by calculating how much light is reflected back towards the camera at this intersection point. 
+                In order to estimate how much light arrived at the intersection point, we used Monte Carlo estimator to integrate over all the light arriving in a hemisphere around the point of interest. 
+                After uniformly sampling incoming ray directions in the hemisphere, we used bvh->intersect() to check whether these incoming rays from wi intersect with light source. <br>
+                Direct Lighting by Importance Sampling Lights: <br>
+                For importance sampling lights, the major difference from uniform hemisphere sampling is that we are not adopting a constant probability but sampling from probability distribution.
+                In other words, we only sample from lights, not uniformly in a hemisphere. If we cast a ray in this direction and there is no other object between the hit point and the light source, 
+                then we know that this light source does cast light onto the hit point. This time we used light->sample_L() to sample incoming rays and then add all the irradiance on intersection point. <br>
+                
+            </p>
             <div align="center">
                 <table style="width:100%">
                     <tr>
@@ -112,7 +132,8 @@
                 </table>
             </div>
             <p>
-                INSERT HERE.
+                Uniform hemisphere sampling: more noises; blurry light;<br>
+                Light sampling: fewer noises; neat scene;<br>
             </p>
             <div align="center">
                 <table style="width:100%">
@@ -138,18 +159,147 @@
                     </tr>
                 </table>
             </div>
-            <p>
-                INSERT HERE.
-            </p>
+
 
             <h2 align="middle">Part 4: Global Illumination</h2>
-            <p>INSERT HERE</p>
-            <p>Here is an example of how to include a simple formula:</p>
-            <p align="middle">
-            <pre align="middle">a^2 + b^2 = c^2</pre>
+            <p>Walk through your implementation of the indirect lighting function.
+                The function at_least_one_bounce_radiance is the main implementation work.At a high level, it should call the one_bounce_radiance function, 
+                and then recursively call itself to estimate the higher bounces. 
+                This recursive call should take one random sample of a direction based on the BSDF at the hit point,
+                trace a ray in that sample direction, and recursively call itself on the new hit point.
+                <pre>
+                    at_least_one_bounce_radiance(r, isect) {
+                        Vector3D bsdf_f = isect.bsdf->sample_f(w_out, &w_in, &pdf);
+                        //if depth == max_ray_depth, there is always one_bounce_radiance
+                        //if depth < max_ray_depth, and path doesn't terminate randomly with Russian Roulette
+                        if ((r.depth == max_ray_depth) || (r.depth > 0 && coin_flip(prob))) {
+                            L_out += one_bounce_radiance(r, isect); 
+                            world_w_in = o2w*w_in;                              //transfer w_in from object coordinate to world coordinate
+                            w_in_ray = Ray(hit_p , world_w_in, (int)r.depth-1); //construct a new ray in world coordinate
+                            if(bvh->intersect(w_in_ray, &in_isect)){
+                                L_out += at_least_one_bounce_radiance(w_in_ray,in_isect)*pdf; //recursively run this function
+                            }
+                        }
+                        return L_out;
+                    }
+                </pre>
             </p>
-            <p>or, alternatively, you can include an SVG image of a LaTex formula.</p>
-            <p>This time it's your job to copy-paste in the rest of the sections :)</p>
+            
+                <div align="center">
+                    <table style="width:100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-1_CBbunny_1024_16.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-1_CBspheres_lambertian_1024_16.png" width="480px" />
+                                <figcaption align="middle">CBspheres l=16 s=1024</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-1_dragon_1024_16.png" width="480px" />
+                                <figcaption align="middle">Dragon l=16 s=1024</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-1_wall-e_1024_16.png" width="480px" />
+                                <figcaption align="middle">Wall-e l=16 s=1024</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <p>Pick one scene and compare rendered views first with only direct illumination, then only indirect illumination. Use 1024 samples per pixel.</p>
+                After comparing these two images with only direct and indirect illumination, we can see that direct illumination makes up most of the global illumination and 
+                indirect illumination is much softer and ligher than direct one. Since we don't consider light reflected by other stuff in direct illumination,
+                the shadow of bunny is really dark. However, in indirect image, color is more uniform.
+                <div align="center">
+                    <table style="width:100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-2_CBbunny_1024_16_only_direct.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 only direct light</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-2_CBbunny_1024_16_only_indirect.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 only indirect light</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <p>
+                For CBbunny.dae, compare rendered views with max_ray_depth set to 0, 1, 2, 3, and 100 (the -m flag). Use 1024 samples per pixel.
+                Where depth =0, we can only see the light source. With the increasing of <code>max_ray_depth</code>, the shadow on bunny is getting lighter and lighter,
+                which means there is more incoming reflected light, but the contribution of higher bounces decreases exponentially, so the difference between depth=2 and depth=3 is not very obvious.
+                </p>
+                <div align="center">
+                    <table style="width:100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-3_CBbunny_1024_16_0.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 depth=0</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-3_CBbunny_1024_16_1.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 depth=1</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-3_CBbunny_1024_16_2.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 depth=2</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-3_CBbunny_1024_16_3.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 depth=3</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <p>
+                    Pick one scene and compare rendered views with various sample-per-pixel rates, including at least 1, 2, 4, 8, 16, 64, and 1024. Use 4 light rays.
+                </p>
+                <div align="center">
+                    <table style="width:100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_1_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=1 d=5</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_2_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=2 d=5</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_4_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=4 d=5</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_8_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=8 d=5</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_16_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=16 d=5</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_64_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=64 d=5</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_1024_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=1024 d=5</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+        
 
 
 
