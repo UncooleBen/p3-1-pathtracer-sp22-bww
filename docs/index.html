@@ -179,7 +179,8 @@
                             //construct a new ray in world coordinate                            
                             w_in_ray = Ray(hit_p , world_w_in, (int)r.depth-1); 
                             if(bvh->intersect(w_in_ray, &in_isect)){
-                                L_out += at_least_one_bounce_radiance(w_in_ray,in_isect)*pdf; //recursively run this function
+                                //recursively run this function
+                                L_out += at_least_one_bounce_radiance(w_in_ray,in_isect)*pdf; 
                             }
                         }
                         return L_out;
@@ -211,10 +212,12 @@
                         </tr>
                     </table>
                 </div>
-                <p>Pick one scene and compare rendered views first with only direct illumination, then only indirect illumination. Use 1024 samples per pixel.</p>
+                <p>
+                Pick one scene and compare rendered views first with only direct illumination, then only indirect illumination. Use 1024 samples per pixel.<br>
                 After comparing these two images with only direct and indirect illumination, we can see that direct illumination makes up most of the global illumination and 
                 indirect illumination is much softer and ligher than direct one. Since we don't consider light reflected by other stuff in direct illumination,
                 the shadow of bunny is really dark. However, in indirect image, color is more uniform.
+                </p>
                 <div align="center">
                     <table style="width:100%">
                         <tr>
@@ -230,7 +233,7 @@
                     </table>
                 </div>
                 <p>
-                For CBbunny.dae, compare rendered views with max_ray_depth set to 0, 1, 2, 3, and 100 (the -m flag). Use 1024 samples per pixel.
+                For CBbunny.dae, compare rendered views with max_ray_depth set to 0, 1, 2, 3, and 100 (the -m flag). Use 1024 samples per pixel.<br>
                 Where depth =0, we can only see the light source. With the increasing of <code>max_ray_depth</code>, the shadow on bunny is getting lighter and lighter,
                 which means there is more incoming reflected light, but the contribution of higher bounces decreases exponentially, so the difference between depth=2 and depth=3 is not very obvious.
                 </p>
