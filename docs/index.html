@@ -61,7 +61,7 @@
 
             <h2 align="middle">Part 2: Bounding Volume Hierarchy</h2>
             <p>
-            Walk through your BVH construction algorithm. Explain the heuristic you chose for picking the splitting point.
+            
             The BVH algorithm partitions sets of objects into disjoint subsets. If given primitives is larger than the max_leaf_size,
             we need to new an internal node which contains a bounding box, left and right children node and recursively split set of primitives
             in two subsets. When the the number of given primitives is smaller or equal to max_leaf_size, we store the object reference in each leaf node and stop recursion.
@@ -93,7 +93,7 @@
                 </table>
             </div>
             <p>
-                BVH performance comparison on peter.dae:
+                BVH performance comparison on peter.dae:<br>
                 Without BVH: <br>
                 Building BVH: 0.0004 sec <br>
                 Render: 31.6675 sec <br>
@@ -105,7 +105,7 @@
             </p>
 
             <h2 align="middle">Part 3: Direct Illumination</h2>
-            <p>Walk through both implementations of the direct lighting function. <br>
+            <p>
                 Direct Lighting with Uniform Hemisphere Sampling: <br>
                 We first casted a ray from the camera, through a specific pixel, and into the scene. 
                 Once it intersects something in the scene, we do this by calculating how much light is reflected back towards the camera at this intersection point. 
@@ -174,8 +174,10 @@
                         //if depth < max_ray_depth, and path doesn't terminate randomly with Russian Roulette
                         if ((r.depth == max_ray_depth) || (r.depth > 0 && coin_flip(prob))) {
                             L_out += one_bounce_radiance(r, isect); 
-                            world_w_in = o2w*w_in;                              //transfer w_in from object coordinate to world coordinate
-                            w_in_ray = Ray(hit_p , world_w_in, (int)r.depth-1); //construct a new ray in world coordinate
+                            //transfer w_in from object coordinate to world coordinate
+                            world_w_in = o2w*w_in;  
+                            //construct a new ray in world coordinate                            
+                            w_in_ray = Ray(hit_p , world_w_in, (int)r.depth-1); 
                             if(bvh->intersect(w_in_ray, &in_isect)){
                                 L_out += at_least_one_bounce_radiance(w_in_ray,in_isect)*pdf; //recursively run this function
                             }
