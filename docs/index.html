@@ -1,60 +1,346 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
 <head>
-<style>  
-    div.padded {  
-      padding-top: 0px;  
-      padding-right: 100px;  
-      padding-bottom: 0.25in;  
-      padding-left: 100px;  
-    }  
-  </style> 
-<title>Your Name  |  CS 184</title>
-<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+    <style>
+        div.padded {
+            padding-top: 0px;
+            padding-right: 100px;
+            padding-bottom: 0.25in;
+            padding-left: 100px;
+        }
+    </style>
+    <title>Yang Huang, Juntao Peng | CS 184</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
 </head>
+
 <body>
-<br />
-<h1 align="middle">Assignment 3: PathTracer</h1>
-    <h2 align="middle">Your Name</h2>
+    <br />
+    <h1 align="middle">Assignment 3: PathTracer</h1>
+    <h2 align="middle">Yang Huang, Juntao Peng</h2>
 
     <div class="padded">
-        <p>Use this section to write an overview of the assignment. All of the text in your write-up should be <em>in your own words</em>. If you need to add additional HTML features to this document, you can search the <a href="http://www.w3schools.com/">http://www.w3schools.com/</a> website for instructions. To edit the HTML, you can just copy and paste existing chunks and fill in the text and image file names appropriately.</p>
-        <o>The website writeup is intended to be a self-contained walkthrough of the assignment: we want this to be a piece of work which showcases your understanding of relevant concepts through both mesh images as well as written explanations about what you did to complete each part of the assignment. Try to be as clear and organized as possible when writing about your own output files or extensions to the assignment. We want to understand what you've achieved and how you've done it!</p> 
-        <p>If you are well-versed in web development, feel free to ditch this template and make a better looking page. Just make sure that you include all the components as we've laid them out here. </p>
+        <p>In part 1, we generated a ray from camera to image plane and transformed it to the world space. We also wrote
+            ray-triangle and ray-sphere intersection tests, which are building blocks for ray-tracing rendering
+            algorithms. In part 2, we implemented BVH to speed up ray intersection computation. In part 3, we implemented
+             direct ray tracing. In part 4, we implemented indirect ray tracing. In part 5, we implemented adaptive sampling.</p>
 
-    <h2 align="middle">Part 1: Ray Generation and Intersection</h2>
-        <p>Describe what you did in Part 1. etc...</p>
-        <div align="center">
-            <table style="width=100%">
-                <tr>
-                    <td align="middle">
-                    <img src="images/example_image.png" width="480px" />
-                    <figcaption align="middle">Results Caption: my bunny is the bounciest bunny</figcaption>
-                </tr>
-            </table>
-        </div>
-        <p>Here is an example of how to include a simple formula:</p>
-        <p align="middle"><pre align="middle">a^2 + b^2 = c^2</pre></p>
-        <p>or, alternatively, you can include an SVG image of a LaTex formula.</p>
-        <p>This time it's your job to copy-paste in the rest of the sections :)</p>
+        <p>Our write-up can be found <a href="https://cal-cs184-student.github.io/sp22-project-webpages-UncooleBen/proj3-1/index.html">here</a>.</a></p>
+            <h2 align="middle">Part 1: Ray Generation and Intersection</h2>
+            <p>In task 1, we generated a ray from camera to image plane and transformed it to the world space. In task
+                2, we uniformly sampled rays across every pixel on the image plane and averaged their evaluated color as
+                the final color for the pixel. In task 3, we wrote a ray-triangle test which composes of: 1) ray-plane
+                intersection; 2) point-in-triangle test using barycentric coordinates. In task 4, we wrote a ray-sphere
+                test which uses the quadratic formula for the roots of quadratic equations.</p>
+            <div align="center">
+                <table style="width:100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part1-1.png" width="480px" />
+                            <figcaption align="middle">Rendering result of CB with 2 spheres</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part1-2.png" width="480px" />
+                            <figcaption align="middle">Rendering result of building.dae</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <h2 align="middle">Part 2: Bounding Volume Hierarchy</h2>
+            <p>
+            
+            The BVH algorithm partitions sets of objects into disjoint subsets. If given primitives is larger than the max_leaf_size,
+            we need to new an internal node which contains a bounding box, left and right children node and recursively split set of primitives
+            in two subsets. When the the number of given primitives is smaller or equal to max_leaf_size, we store the object reference in each leaf node and stop recursion.
+            As for picking the splitting point, we first chose the axis with the largest cover range. Then we sorted the primitives based on their positions on this axis,
+            and pick up the median object, using the median index as our splitting point.
+            </p>
+            <div align="center">
+                <table style="width:100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part2-1.png" width="480px" />
+                            <figcaption align="middle">Rendering result of beast.dae</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part2-2.png" width="480px" />
+                            <figcaption align="middle">Rendering result of beetle.dae</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part2-3.png" width="480px" />
+                            <figcaption align="middle">Rendering result of peter.dae</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part2-4.png" width="480px" />
+                            <figcaption align="middle">Rendering result of cow.dae</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <p>
+                BVH performance comparison on peter.dae:<br>
+                Without BVH: <br>
+                Building BVH: 0.0004 sec <br>
+                Render: 31.6675 sec <br>
+            </p>
+            <p>
+                With BVH:
+                Building BVH: 0.0222 sec <br>
+                Render: 0.0443s <br>
+            </p>
+
+            <h2 align="middle">Part 3: Direct Illumination</h2>
+            <p>
+                Direct Lighting with Uniform Hemisphere Sampling: <br>
+                We first casted a ray from the camera, through a specific pixel, and into the scene. 
+                Once it intersects something in the scene, we do this by calculating how much light is reflected back towards the camera at this intersection point. 
+                In order to estimate how much light arrived at the intersection point, we used Monte Carlo estimator to integrate over all the light arriving in a hemisphere around the point of interest. 
+                After uniformly sampling incoming ray directions in the hemisphere, we used bvh->intersect() to check whether these incoming rays from wi intersect with light source. <br>
+                Direct Lighting by Importance Sampling Lights: <br>
+                For importance sampling lights, the major difference from uniform hemisphere sampling is that we are not adopting a constant probability but sampling from probability distribution.
+                In other words, we only sample from lights, not uniformly in a hemisphere. If we cast a ray in this direction and there is no other object between the hit point and the light source, 
+                then we know that this light source does cast light onto the hit point. This time we used light->sample_L() to sample incoming rays and then add all the irradiance on intersection point. <br>
+                
+            </p>
+            <div align="center">
+                <table style="width:100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part3_H_CBbunny.png" width="480px" />
+                            <figcaption align="middle">CBbunny with hemisphere</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part3_I_CBbunny.png" width="480px" />
+                            <figcaption align="middle">CBbunny with importance</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <p>
+                Uniform hemisphere sampling: more noises; blurry light;<br>
+                Light sampling: fewer noises; neat scene;<br>
+            </p>
+            <div align="center">
+                <table style="width:100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part3_CBbunny_l1_s1.png" width="480px" />
+                            <figcaption align="middle">CBbunny l=1 s=1</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part3_CBbunny_l4_s1.png" width="480px" />
+                            <figcaption align="middle">CBbunny l=4 s=1</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part3_CBbunny_l16_s1.png" width="480px" />
+                            <figcaption align="middle">CBbunny l=16 s=1</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part3_CBbunny_l64_s1.png" width="480px" />
+                            <figcaption align="middle">CBbunny l=64 s=1</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+
+            <h2 align="middle">Part 4: Global Illumination</h2>
+            <p>Walk through your implementation of the indirect lighting function.
+                The function at_least_one_bounce_radiance is the main implementation work.At a high level, it should call the one_bounce_radiance function, 
+                and then recursively call itself to estimate the higher bounces. 
+                This recursive call should take one random sample of a direction based on the BSDF at the hit point,
+                trace a ray in that sample direction, and recursively call itself on the new hit point.
+                <pre>
+                    at_least_one_bounce_radiance(r, isect) {
+                        Vector3D bsdf_f = isect.bsdf->sample_f(w_out, &w_in, &pdf);
+                        //if depth == max_ray_depth, there is always one_bounce_radiance
+                        //if depth < max_ray_depth, and path doesn't terminate randomly with Russian Roulette
+                        if ((r.depth == max_ray_depth) || (r.depth > 0 && coin_flip(prob))) {
+                            L_out += one_bounce_radiance(r, isect); 
+                            //transfer w_in from object coordinate to world coordinate
+                            world_w_in = o2w*w_in;  
+                            //construct a new ray in world coordinate                            
+                            w_in_ray = Ray(hit_p , world_w_in, (int)r.depth-1); 
+                            if(bvh->intersect(w_in_ray, &in_isect)){
+                                //recursively run this function
+                                L_out += at_least_one_bounce_radiance(w_in_ray,in_isect)*pdf; 
+                            }
+                        }
+                        return L_out;
+                    }
+                </pre>
+            </p>
+            
+                <div align="center">
+                    <table style="width:100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-1_CBbunny_1024_16.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-1_CBspheres_lambertian_1024_16.png" width="480px" />
+                                <figcaption align="middle">CBspheres l=16 s=1024</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-1_dragon_1024_16.png" width="480px" />
+                                <figcaption align="middle">Dragon l=16 s=1024</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-1_wall-e_1024_16.png" width="480px" />
+                                <figcaption align="middle">Wall-e l=16 s=1024</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <p>
+                Pick one scene and compare rendered views first with only direct illumination, then only indirect illumination. Use 1024 samples per pixel.<br>
+                After comparing these two images with only direct and indirect illumination, we can see that direct illumination makes up most of the global illumination and 
+                indirect illumination is much softer and ligher than direct one. Since we don't consider light reflected by other stuff in direct illumination,
+                the shadow of bunny is really dark. However, in indirect image, color is more uniform.
+                </p>
+                <div align="center">
+                    <table style="width:100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-2_CBbunny_1024_16_only_direct.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 only direct light</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-2_CBbunny_1024_16_only_indirect.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 only indirect light</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <p>
+                For CBbunny.dae, compare rendered views with max_ray_depth set to 0, 1, 2, 3, and 100 (the -m flag). Use 1024 samples per pixel.<br>
+                Where depth =0, we can only see the light source. With the increasing of <code>max_ray_depth</code>, the shadow on bunny is getting lighter and lighter,
+                which means there is more incoming reflected light, but the contribution of higher bounces decreases exponentially, so the difference between depth=2 and depth=3 is not very obvious.
+                </p>
+                <div align="center">
+                    <table style="width:100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-3_CBbunny_1024_16_0.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 depth=0</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-3_CBbunny_1024_16_1.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 depth=1</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-3_CBbunny_1024_16_2.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 depth=2</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-3_CBbunny_1024_16_3.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=16 s=1024 depth=3</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <p>
+                    Pick one scene and compare rendered views with various sample-per-pixel rates, including at least 1, 2, 4, 8, 16, 64, and 1024. Use 4 light rays.
+                </p>
+                <div align="center">
+                    <table style="width:100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_1_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=1 d=5</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_2_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=2 d=5</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_4_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=4 d=5</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_8_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=8 d=5</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_16_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=16 d=5</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_64_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=64 d=5</figcaption>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part4-4_CBbunny_1024_4_5.png" width="480px" />
+                                <figcaption align="middle">CBbunny l=4 s=1024 d=5</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+        
 
 
 
-    <h2 align="middle">A Few Notes On Webpages</h2>
-        <p>Here are a few problems students have encountered in the past. You will probably encounter these problems at some point, so don't wait until right before the deadline to check that everything is working. Test your website on the instructional machines early!</p>
-        <ul>
-        <li>Your main report page should be called index.html.</li>
-        <li>Be sure to include and turn in all of the other files (such as images) that are linked in your report!</li>
-        <li>Use only <em>relative</em> paths to files, such as <pre>"./images/image.jpg"</pre>
-        Do <em>NOT</em> use absolute paths, such as <pre>"/Users/student/Desktop/image.jpg"</pre></li>
-        <li>Pay close attention to your filename extensions. Remember that on UNIX systems (such as the instructional machines), capitalization matters. <pre>.png != .jpeg != .jpg != .JPG</pre>
-        <li>Be sure to adjust the permissions on your files so that they are world readable. For more information on this please see this tutorial: <a href="http://www.grymoire.com/Unix/Permissions.html">http://www.grymoire.com/Unix/Permissions.html</a></li>
-        <li>And again, test your website on the instructional machines early!</li>
-</div>
+            <h2 align="middle">Part 5: Adaptive Sampling</h2>
+            <p>
+                In part 5, we implemented adaptive sampling using two helper variables <code>sample_sum</code> and
+                <code>sample_squared_sum</code>, which is the s1 and s2 mentioned in the part 5 guideline. We update
+                these two variables as we generate new pixel ray samples and use them to compute the indicator
+                <code>I</code>. And the test whether it lies in the product of maxTolerance and mean. If so, we break
+                out of the for loop and divide the accumulated radiance by the sample count so far.
+            </p>
+            <div align="center">
+                <table style="width:100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_bunny_2048_1_5.png" width="480px" />
+                            <figcaption align="middle">CBbunny with 2048 samples, 1 ray, and 5 ray depth</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_bunny_1024_1_5_rate.png" width="480px" />
+                            <figcaption align="middle">CBbunny rate with 2048 samples, 1 ray, and 5 ray depth
+                            </figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <p>
+                We can see from the rate image that the three walls and the floor converges very quickly. This is
+                reasonable since they receive direct strong radiance from the light source on the ceiling, making other
+                lights bounce on them less important.
+            </p>
+            <p>
+                The ceiling converges very slowly because there is hardly any direct lights bounce on it. Most of the
+                radiance it receives is from more than one bounces.
+            </p>
+            <p>
+                Similar observation applies on the bunny. The surfaces with top pointing normal converges quickly as
+                most of the radiances come from the light source. However, other surfaces converge slowly because they
+                are not directly lighted and need to be updated according to more than one bounces.
+            </p>
+            <h2 align="middle">Contribution</h2>
+            <p>
+            Yang Huang: Yang worked with Juntao on task 1, 2, 3, 4 and she wrote writeup on task 2, 3, 4.
+            Juntao Peng: Juntao worked with Yang on task 1, 2, 3, 4, 5 and he wrote writeup on task 1, 5. He also helped debug Yang's code in part 2, 3, 4, 5.
+            </p>
+            
+    </div>
 </body>
+
 </html>
-
-
-
-
