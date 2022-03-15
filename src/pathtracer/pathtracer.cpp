@@ -260,7 +260,7 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
   Vector2D origin = Vector2D(x, y); // bottom left corner of the pixel
 
   Vector3D pixel_color(0, 0, 0);
-
+#define MY_PART_5 1
 // Part 5
 #ifdef MY_PART_5
   double sample_sum = 0.0, sample_squared_sum = 0.0;
