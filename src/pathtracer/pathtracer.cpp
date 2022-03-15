@@ -94,8 +94,7 @@ PathTracer::estimate_direct_lighting_hemisphere(const Ray &r,
   L_out *= 2 * PI;
   // Average out num_samples
   L_out /= num_samples;
-  // cout << L_out << endl;
-  return L_out;
+  return L_out / 2;
 }
 
 Vector3D
@@ -148,8 +147,8 @@ PathTracer::estimate_direct_lighting_importance(const Ray &r,
     }
   }
 
-  L_out /= num_samples * 2;
-  return L_out;
+  L_out /= num_samples;
+  return L_out / 2;
 }
 
 Vector3D PathTracer::zero_bounce_radiance(const Ray &r,
@@ -185,8 +184,27 @@ Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r,
   // TODO: Part 4, Task 2
   // Returns the one bounce radiance + radiance from extra bounces at this point.
   // Should be called recursively to simulate extra bounces.
+  double rr_terminate_p = 0.3;
+  if (r.depth > 0 || !coin_flip(rr_terminate_p)) {
+    // Get next bounce radiance
+    L_out += one_bounce_radiance(r, isect);
 
+    // Recursion with depth - 1
+    Vector3D w_in;
+    double pdf;
+    isect.bsdf->sample_f(w_out, &w_in, &pdf);
 
+    Vector3D world_w_in = o2w * w_in;
+    Ray in_ray(hit_p, world_w_in);
+    in_ray.min_t = EPS_F;
+    in_ray.depth = r.depth == 0 ? 0 : r.depth - 1;
+
+    Intersection in_isect;
+
+    if (bvh->intersect(in_ray, &in_isect)) {
+      L_out += pdf * at_least_one_bounce_radiance(in_ray, in_isect);
+    }
+  }
   return L_out;
 }
 
@@ -209,12 +227,12 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
   L_out += zero_bounce_radiance(r, isect);
 
   // TODO (Part 3): Return the direct illumination.
-  L_out += one_bounce_radiance(r, isect);
+  // L_out += one_bounce_radiance(r, isect);
 
 
   // TODO (Part 4): Accumulate the "direct" and "indirect"
   // parts of global illumination into L_out rather than just direct
-
+  L_out += at_least_one_bounce_radiance(r, isect);
   return L_out;
 }
 
@@ -233,16 +251,36 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
 
   Vector3D pixel_color(0, 0, 0);
 
-  for (int ray_idx=0; ray_idx<num_samples; ray_idx++) {
+  // Part 5
+  double sample_sum = 0.0, sample_squared_sum = 0.0;
+  int ray_idx;
+  for (ray_idx=0; ray_idx<num_samples; ray_idx++) {
     Vector2D sample = gridSampler->get_sample() + origin;
     sample.x /= sampleBuffer.w;
     sample.y /= sampleBuffer.h;
     Ray sample_ray = camera->generate_ray(sample.x, sample.y);
-    pixel_color += est_radiance_global_illumination(sample_ray);
+    sample_ray.depth = max_ray_depth;
+    Vector3D pixel_radiance = est_radiance_global_illumination(sample_ray);
+    pixel_color += pixel_radiance;
+
+    sample_sum += pixel_radiance.illum();
+    sample_squared_sum += pow(pixel_radiance.illum(), 2);
+
+    int n = ray_idx + 1;
+    if ((n % samplesPerBatch) == 0) {
+      double mean = sample_sum / n;
+      double squared_mean = sample_squared_sum / n;
+      double variance = (sample_squared_sum - pow(sample_sum, 2) / n) / (n - 1);
+      double indicator = 1.96 * sqrt(variance / n);
+      if (indicator <= maxTolerance * mean) {
+        ray_idx ++;
+        break;
+      }
+    }
   }
-  pixel_color /= num_samples;
+  pixel_color /= ray_idx;
   sampleBuffer.update_pixel(pixel_color, x, y);
-  sampleCountBuffer[x + y * sampleBuffer.w] = num_samples;
+  sampleCountBuffer[x + y * sampleBuffer.w] = ray_idx;
 }
 
 void PathTracer::autofocus(Vector2D loc) {
